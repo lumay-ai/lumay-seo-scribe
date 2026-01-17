@@ -373,6 +373,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_share_count: {
+        Args: { _platform: string; _post_id: string }
+        Returns: undefined
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_author_or_higher: { Args: { _user_id: string }; Returns: boolean }
       is_editor_or_admin: { Args: { _user_id: string }; Returns: boolean }
