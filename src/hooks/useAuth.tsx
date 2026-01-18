@@ -21,6 +21,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const fetchUserRoles = async (userId: string): Promise<UserRole[]> => {
+  const { data } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  return (data as UserRole[]) || [];
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -28,53 +36,48 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Fetch user roles
-          const { data: userRoles } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", session.user.id);
-          
-          setRoles(userRoles as UserRole[] || []);
-        } else {
-          setRoles([]);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    // Then get initial session
+    // Get initial session first
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .then(({ data }) => {
-            setRoles(data as UserRole[] || []);
-            setLoading(false);
-          });
+        fetchUserRoles(session.user.id).then((roles) => {
+          setRoles(roles);
+          setLoading(false);
+        });
       } else {
         setLoading(false);
       }
     });
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Use setTimeout to avoid deadlock
+          setTimeout(() => {
+            fetchUserRoles(session.user.id).then((roles) => {
+              setRoles(roles);
+              setLoading(false);
+            });
+          }, 0);
+        } else {
+          setRoles([]);
+          setLoading(false);
+        }
+      }
+    );
 
     return () => subscription.unsubscribe();
   }, []);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
+    return { error: error as Error | null };
   };
 
   const signUp = async (email: string, password: string, displayName?: string) => {
@@ -82,15 +85,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: `${window.location.origin}/`,
         data: { display_name: displayName },
       },
     });
-    return { error };
+    return { error: error as Error | null };
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setRoles([]);
   };
 
   const isAdmin = roles.some((r) => r.role === "admin");
