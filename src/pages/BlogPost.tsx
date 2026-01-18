@@ -1,4 +1,5 @@
 import { useParams } from "react-router-dom";
+import { useEffect } from "react";
 import { format } from "date-fns";
 import { Calendar, Clock, User } from "lucide-react";
 import Header from "@/components/Header";
@@ -12,10 +13,21 @@ import RelatedPosts from "@/components/RelatedPosts";
 import ReadingProgress from "@/components/ReadingProgress";
 import SEOHead from "@/components/SEOHead";
 import { getPostBySlug, getRelatedPosts } from "@/data/posts";
+import { useTrackPageView } from "@/hooks/useAnalytics";
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
   const post = getPostBySlug(slug || "");
+  const trackPageView = useTrackPageView();
+
+  // Track page view
+  useEffect(() => {
+    if (post) {
+      trackPageView.mutate({
+        pagePath: `/blog/${slug}`,
+      });
+    }
+  }, [slug]);
 
   if (!post) {
     return (

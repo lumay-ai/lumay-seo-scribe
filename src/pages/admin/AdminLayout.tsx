@@ -9,13 +9,15 @@ import {
   Settings,
   LogOut,
   Loader2,
-  ChevronLeft
+  ChevronLeft,
+  BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
+  { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
   { icon: FileText, label: "Posts", href: "/admin/posts" },
   { icon: FolderOpen, label: "Categories", href: "/admin/categories" },
   { icon: Tags, label: "Tags", href: "/admin/tags" },
