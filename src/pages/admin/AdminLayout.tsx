@@ -10,7 +10,8 @@ import {
   LogOut,
   Loader2,
   ChevronLeft,
-  BarChart3
+  BarChart3,
+  User
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ const navItems = [
   { icon: FolderOpen, label: "Categories", href: "/admin/categories" },
   { icon: Tags, label: "Tags", href: "/admin/tags" },
   { icon: Users, label: "Team", href: "/admin/team" },
+  { icon: User, label: "Profile", href: "/admin/profile" },
 ];
 
 const AdminLayout = () => {

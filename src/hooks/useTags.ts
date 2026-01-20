@@ -53,6 +53,45 @@ export const useCreateTag = () => {
   });
 };
 
+export const useUpdateTag = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, name, slug }: { id: string; name: string; slug: string }) => {
+      const { data, error } = await supabase
+        .from("tags")
+        .update({ name, slug })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+    },
+  });
+};
+
+export const useDeleteTag = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("tags")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+    },
+  });
+};
+
 export const usePostTags = (postId: string) => {
   return useQuery({
     queryKey: ["post-tags", postId],

@@ -15,6 +15,9 @@ import AnalyticsDashboard from "./pages/admin/AnalyticsDashboard";
 import PostsList from "./pages/admin/PostsList";
 import PostEditor from "./pages/admin/PostEditor";
 import TeamManagement from "./pages/admin/TeamManagement";
+import CategoriesManagement from "./pages/admin/CategoriesManagement";
+import TagsManagement from "./pages/admin/TagsManagement";
+import ProfileManagement from "./pages/admin/ProfileManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,7 +41,10 @@ const App = () => (
               <Route path="posts" element={<PostsList />} />
               <Route path="posts/new" element={<PostEditor />} />
               <Route path="posts/:id" element={<PostEditor />} />
+              <Route path="categories" element={<CategoriesManagement />} />
+              <Route path="tags" element={<TagsManagement />} />
               <Route path="team" element={<TeamManagement />} />
+              <Route path="profile" element={<ProfileManagement />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
