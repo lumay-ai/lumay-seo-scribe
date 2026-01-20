@@ -14,8 +14,7 @@ export const usePosts = (status?: "published" | "draft" | "archived") => {
         .from("posts")
         .select(`
           *,
-          category:categories(*),
-          author:profiles!posts_author_id_fkey(*)
+          category:categories(*)
         `)
         .order("created_at", { ascending: false });
 
@@ -25,6 +24,25 @@ export const usePosts = (status?: "published" | "draft" | "archived") => {
 
       const { data, error } = await query;
       if (error) throw error;
+
+      // Fetch author profiles separately if needed
+      if (data && data.length > 0) {
+        const authorIds = [...new Set(data.map(p => p.author_id).filter(Boolean))];
+        if (authorIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("*")
+            .in("user_id", authorIds);
+
+          const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+          
+          return data.map(post => ({
+            ...post,
+            author: post.author_id ? profileMap.get(post.author_id) || null : null,
+          }));
+        }
+      }
+
       return data;
     },
   });
@@ -39,7 +57,6 @@ export const usePost = (slug: string) => {
         .select(`
           *,
           category:categories(*),
-          author:profiles!posts_author_id_fkey(*),
           post_tags(
             tag:tags(*)
           )
@@ -48,6 +65,18 @@ export const usePost = (slug: string) => {
         .maybeSingle();
 
       if (error) throw error;
+
+      // Fetch author profile separately
+      if (data?.author_id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", data.author_id)
+          .maybeSingle();
+        
+        return { ...data, author: profile };
+      }
+
       return data;
     },
     enabled: !!slug,
@@ -63,7 +92,6 @@ export const usePostById = (id: string) => {
         .select(`
           *,
           category:categories(*),
-          author:profiles!posts_author_id_fkey(*),
           post_tags(
             tag:tags(*)
           )
@@ -72,6 +100,18 @@ export const usePostById = (id: string) => {
         .maybeSingle();
 
       if (error) throw error;
+
+      // Fetch author profile separately
+      if (data?.author_id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", data.author_id)
+          .maybeSingle();
+        
+        return { ...data, author: profile };
+      }
+
       return data;
     },
     enabled: !!id,
@@ -144,7 +184,6 @@ export const useSearchPosts = (query: string, categorySlug?: string, tagSlug?: s
         .select(`
           *,
           category:categories(*),
-          author:profiles!posts_author_id_fkey(*),
           post_tags(
             tag:tags(*)
           )
