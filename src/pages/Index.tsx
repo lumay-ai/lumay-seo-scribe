@@ -1,13 +1,16 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BlogCard from "@/components/BlogCard";
-import { samplePosts } from "@/data/posts";
+import { usePosts } from "@/hooks/usePosts";
 import { useEffect } from "react";
 import heroBg from "@/assets/hero-bg.jpg";
+import { Loader2 } from "lucide-react";
 
 const Index = () => {
-  const featuredPost = samplePosts[0];
-  const otherPosts = samplePosts.slice(1);
+  const { data: posts, isLoading } = usePosts("published");
+  
+  const featuredPost = posts?.[0];
+  const otherPosts = posts?.slice(1) || [];
 
   useEffect(() => {
     document.title = "Lumay Blog | Insights for Modern Content Creators";
@@ -58,33 +61,43 @@ const Index = () => {
         </section>
 
         {/* Featured Post */}
-        <section className="py-12 md:py-16">
-          <div className="container">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="font-heading text-2xl md:text-3xl font-semibold text-heading">
-                Featured Article
-              </h2>
-              <span className="text-sm text-muted-foreground">
-                Editor's pick
-              </span>
+        {isLoading ? (
+          <section className="py-12 md:py-16">
+            <div className="container flex justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-            <BlogCard post={featuredPost} featured />
-          </div>
-        </section>
+          </section>
+        ) : featuredPost ? (
+          <section className="py-12 md:py-16">
+            <div className="container">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="font-heading text-2xl md:text-3xl font-semibold text-heading">
+                  Featured Article
+                </h2>
+                <span className="text-sm text-muted-foreground">
+                  Editor's pick
+                </span>
+              </div>
+              <BlogCard post={featuredPost} featured />
+            </div>
+          </section>
+        ) : null}
 
         {/* Latest Posts */}
-        <section className="py-12 md:py-16 bg-secondary/30">
-          <div className="container">
-            <h2 className="font-heading text-2xl md:text-3xl font-semibold text-heading mb-8">
-              Latest Articles
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {otherPosts.map((post) => (
-                <BlogCard key={post.id} post={post} />
-              ))}
+        {otherPosts.length > 0 && (
+          <section className="py-12 md:py-16 bg-secondary/30">
+            <div className="container">
+              <h2 className="font-heading text-2xl md:text-3xl font-semibold text-heading mb-8">
+                Latest Articles
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {otherPosts.map((post) => (
+                  <BlogCard key={post.id} post={post} />
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Newsletter Section */}
         <section className="py-16 md:py-24">
