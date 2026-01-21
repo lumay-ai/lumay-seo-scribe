@@ -184,6 +184,8 @@ export type Database = {
           featured_image_alt: string | null
           featured_image_url: string | null
           id: string
+          is_sponsored: boolean | null
+          is_trending: boolean | null
           og_description: string | null
           og_image: string | null
           og_title: string | null
@@ -200,6 +202,7 @@ export type Database = {
           twitter_image: string | null
           twitter_title: string | null
           updated_at: string
+          view_count: number | null
         }
         Insert: {
           author_id?: string | null
@@ -211,6 +214,8 @@ export type Database = {
           featured_image_alt?: string | null
           featured_image_url?: string | null
           id?: string
+          is_sponsored?: boolean | null
+          is_trending?: boolean | null
           og_description?: string | null
           og_image?: string | null
           og_title?: string | null
@@ -227,6 +232,7 @@ export type Database = {
           twitter_image?: string | null
           twitter_title?: string | null
           updated_at?: string
+          view_count?: number | null
         }
         Update: {
           author_id?: string | null
@@ -238,6 +244,8 @@ export type Database = {
           featured_image_alt?: string | null
           featured_image_url?: string | null
           id?: string
+          is_sponsored?: boolean | null
+          is_trending?: boolean | null
           og_description?: string | null
           og_image?: string | null
           og_title?: string | null
@@ -254,6 +262,7 @@ export type Database = {
           twitter_image?: string | null
           twitter_title?: string | null
           updated_at?: string
+          view_count?: number | null
         }
         Relationships: [
           {

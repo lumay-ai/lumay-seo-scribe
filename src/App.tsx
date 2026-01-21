@@ -18,6 +18,7 @@ import TeamManagement from "./pages/admin/TeamManagement";
 import CategoriesManagement from "./pages/admin/CategoriesManagement";
 import TagsManagement from "./pages/admin/TagsManagement";
 import ProfileManagement from "./pages/admin/ProfileManagement";
+import AIContentGenerator from "./pages/admin/AIContentGenerator";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
               <Route path="analytics" element={<AnalyticsDashboard />} />
+              <Route path="ai-generator" element={<AIContentGenerator />} />
               <Route path="posts" element={<PostsList />} />
               <Route path="posts/new" element={<PostEditor />} />
               <Route path="posts/:id" element={<PostEditor />} />
