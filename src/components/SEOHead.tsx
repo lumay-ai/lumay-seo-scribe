@@ -50,7 +50,7 @@ const SEOHead = ({ seo, schema }: SEOHeadProps) => {
 
     // Cleanup function
     return () => {
-      document.title = "Lumay Blog";
+      document.title = "Lumay AI";
     };
   }, [seo]);
 
