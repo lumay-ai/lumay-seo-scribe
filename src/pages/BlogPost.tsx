@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { format } from "date-fns";
 import { Calendar, Clock, User, Loader2 } from "lucide-react";
 import Header from "@/components/Header";
@@ -8,9 +8,10 @@ import Breadcrumb from "@/components/Breadcrumb";
 import AuthorCard from "@/components/AuthorCard";
 import ReadingProgress from "@/components/ReadingProgress";
 import SEOHead from "@/components/SEOHead";
+import TableOfContents from "@/components/TableOfContents";
 import { usePost } from "@/hooks/usePosts";
 import { useTrackPageView } from "@/hooks/useAnalytics";
-import { SEOMeta } from "@/types/blog";
+import { SEOMeta, TableOfContentsItem } from "@/types/blog";
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -25,6 +26,58 @@ const BlogPost = () => {
       });
     }
   }, [slug, post]);
+
+  // Extract table of contents from content
+  const tableOfContents = useMemo((): TableOfContentsItem[] => {
+    if (!post?.content) return [];
+    
+    const tocItems: TableOfContentsItem[] = [];
+    const headingRegex = /<h([23])[^>]*id="([^"]*)"[^>]*>([^<]*)<\/h[23]>/gi;
+    let match;
+    
+    while ((match = headingRegex.exec(post.content)) !== null) {
+      tocItems.push({
+        id: match[2] || `heading-${tocItems.length}`,
+        title: match[3].replace(/<[^>]*>/g, '').trim(),
+        level: parseInt(match[1]) as 2 | 3,
+      });
+    }
+    
+    // Also try matching headings without IDs and add IDs dynamically
+    if (tocItems.length === 0) {
+      const simpleHeadingRegex = /<h([23])[^>]*>([^<]+)<\/h[23]>/gi;
+      while ((match = simpleHeadingRegex.exec(post.content)) !== null) {
+        const title = match[2].replace(/<[^>]*>/g, '').trim();
+        const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        tocItems.push({
+          id: id || `heading-${tocItems.length}`,
+          title,
+          level: parseInt(match[1]) as 2 | 3,
+        });
+      }
+    }
+    
+    return tocItems;
+  }, [post?.content]);
+
+  // Process content to add IDs to headings if missing
+  const processedContent = useMemo(() => {
+    if (!post?.content) return '';
+    
+    let content = post.content;
+    let headingIndex = 0;
+    
+    // Add IDs to headings that don't have them
+    content = content.replace(/<h([23])([^>]*)>([^<]+)<\/h([23])>/gi, (match, level, attrs, text, closeLevel) => {
+      if (attrs.includes('id=')) {
+        return match; // Already has ID
+      }
+      const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `heading-${headingIndex++}`;
+      return `<h${level}${attrs} id="${id}">${text}</h${closeLevel}>`;
+    });
+    
+    return content;
+  }, [post?.content]);
 
   if (isLoading) {
     return (
@@ -191,10 +244,10 @@ const BlogPost = () => {
                 )}
 
                 {/* Article Body */}
-                {post.content && (
+                {processedContent && (
                   <div
-                    className="article-content prose prose-lg max-w-none"
-                    dangerouslySetInnerHTML={{ __html: post.content }}
+                    className="article-content prose prose-lg max-w-none prose-headings:scroll-mt-24 prose-table:border prose-th:bg-muted prose-th:p-3 prose-td:p-3 prose-td:border prose-aside:bg-muted/50 prose-aside:p-4 prose-aside:rounded-lg prose-aside:border-l-4 prose-aside:border-primary"
+                    dangerouslySetInnerHTML={{ __html: processedContent }}
                   />
                 )}
 
@@ -215,9 +268,17 @@ const BlogPost = () => {
                 )}
               </article>
 
-              {/* Sidebar */}
+              {/* Sidebar with Table of Contents */}
               <aside className="hidden lg:block">
-                <div className="sticky top-24">
+                <div className="sticky top-24 space-y-6">
+                  {/* Table of Contents */}
+                  {tableOfContents.length > 0 && (
+                    <div className="p-4 bg-card border border-border rounded-lg">
+                      <TableOfContents items={tableOfContents} />
+                    </div>
+                  )}
+
+                  {/* Share Section */}
                   <div className="p-4 bg-card border border-border rounded-lg">
                     <h3 className="font-heading text-lg font-semibold text-heading mb-2">
                       Share this article
