@@ -2,7 +2,34 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface GeneratedContent {
+interface KeywordDistance {
+  close: string[];
+  medium: string[];
+  far: string[];
+}
+
+interface IntentBasedKeywords {
+  informational: string[];
+  navigational: string[];
+  transactional: string[];
+  commercial: string[];
+}
+
+interface GeneratedKeywords {
+  primary: string;
+  withPrefix: string[];
+  withSuffix: string[];
+  lsi: string[];
+  semantic: string[];
+  related: string[];
+  longTail: string[];
+  distance: KeywordDistance;
+  llmQueries: string[];
+  nlpEntities: string[];
+  intentBased: IntentBasedKeywords;
+}
+
+export interface GeneratedContent {
   title: string;
   metaDescription: string;
   excerpt: string;
@@ -10,24 +37,26 @@ interface GeneratedContent {
   quickSummary?: string[];
   directAnswer?: string;
   content: string;
-  keywords: {
-    primary: string;
-    lsi: string[];
-    semantic: string[];
-    related: string[];
-    longTail: string[];
-  };
+  plainContent?: string;
+  keywords: GeneratedKeywords;
   faqs: { question: string; answer: string }[];
   tableOfContents: { id: string; title: string; level: number }[];
+  schemaMarkup?: object;
   wordCount: number;
   readingTime: number;
+  keywordDensity?: number;
 }
 
-interface GenerateParams {
+export interface GenerateParams {
   topic: string;
   keywords: string;
   brandName?: string;
+  location?: string;
   targetWordCount?: number;
+  keywordIntent?: string;
+  powerWords?: string;
+  keywordPrefix?: string;
+  keywordSuffix?: string;
 }
 
 export const useAIContentGenerator = () => {
@@ -52,6 +81,21 @@ export const useAIContentGenerator = () => {
         throw new Error(data.error);
       }
 
+      // Extract table of contents from HTML if not provided
+      if (data.content && (!data.tableOfContents || data.tableOfContents.length === 0)) {
+        const tocItems: { id: string; title: string; level: number }[] = [];
+        const headingRegex = /<h([23])[^>]*id="([^"]*)"[^>]*>([^<]*)<\/h[23]>/gi;
+        let match;
+        while ((match = headingRegex.exec(data.content)) !== null) {
+          tocItems.push({
+            level: parseInt(match[1]),
+            id: match[2] || `heading-${tocItems.length}`,
+            title: match[3].replace(/<[^>]*>/g, '').trim()
+          });
+        }
+        data.tableOfContents = tocItems;
+      }
+
       setGeneratedContent(data);
       toast.success("Content generated successfully!");
       return data;
@@ -74,6 +118,7 @@ export const useAIContentGenerator = () => {
     generateContent,
     isGenerating,
     generatedContent,
+    setGeneratedContent,
     error,
     clearContent,
   };
