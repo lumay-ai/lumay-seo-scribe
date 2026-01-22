@@ -44,7 +44,7 @@ const Login = () => {
         <CardHeader className="text-center">
           <Link to="/" className="inline-block mb-4">
             <span className="font-heading text-2xl font-bold text-heading">
-              Lumay<span className="text-primary">.</span>
+              Lumay<span className="text-primary">AI</span>
             </span>
           </Link>
           <CardTitle className="font-heading text-2xl">Welcome back</CardTitle>

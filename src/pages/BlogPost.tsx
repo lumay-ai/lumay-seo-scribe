@@ -66,10 +66,13 @@ const BlogPost = () => {
   const tags = post.post_tags?.map((pt: any) => pt.tag) || [];
 
   // Build SEO data from post
+  const baseUrl = "https://lumay.42web.io";
+  const pageUrl = `${baseUrl}/blog/${slug}`;
+  
   const seoData: SEOMeta = {
     title: post.seo_title || post.title,
     description: post.seo_description || post.excerpt || "",
-    canonicalUrl: post.canonical_url || window.location.href,
+    canonicalUrl: post.canonical_url || pageUrl,
     ogTitle: post.og_title || post.title,
     ogDescription: post.og_description || post.excerpt || "",
     ogImage: post.og_image || post.featured_image_url || "",
