@@ -17,16 +17,33 @@ interface IntentBasedKeywords {
 
 interface GeneratedKeywords {
   primary: string;
+  coreVariations?: string[];
+  secondary?: string[];
+  secondaryVariations?: string[];
   withPrefix: string[];
   withSuffix: string[];
   lsi: string[];
   semantic: string[];
   related: string[];
+  relatedness?: string[];
   longTail: string[];
   distance: KeywordDistance;
   llmQueries: string[];
   nlpEntities: string[];
   intentBased: IntentBasedKeywords;
+}
+
+interface LLMQuestion {
+  question: string;
+  answer: string;
+  funnel: 'TOFU' | 'MOFU' | 'BOFU';
+  intent: 'informational' | 'commercial' | 'transactional' | 'navigational';
+}
+
+interface FunnelBreakdown {
+  tofu: string[];
+  mofu: string[];
+  bofu: string[];
 }
 
 export interface GeneratedContent {
@@ -39,8 +56,10 @@ export interface GeneratedContent {
   content: string;
   plainContent?: string;
   keywords: GeneratedKeywords;
+  llmQuestions?: LLMQuestion[];
   faqs: { question: string; answer: string }[];
   tableOfContents: { id: string; title: string; level: number }[];
+  funnelBreakdown?: FunnelBreakdown;
   schemaMarkup?: object;
   wordCount: number;
   readingTime: number;
@@ -52,6 +71,7 @@ export interface GenerateParams {
   keywords: string;
   brandName?: string;
   location?: string;
+  context?: string;
   targetWordCount?: number;
   keywordIntent?: string;
   powerWords?: string;

@@ -9,9 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Loader2, Sparkles, Copy, FileText, Tags, HelpCircle, Send, 
-  MapPin, Zap, Target, Layers, BookOpen, CheckCircle2
+  MapPin, Zap, Target, Layers, BookOpen, CheckCircle2, MessageCircleQuestion,
+  TrendingUp, Users, ShoppingCart
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCreatePost } from "@/hooks/usePosts";
@@ -29,11 +31,12 @@ const AIContentGenerator = () => {
   const [keywords, setKeywords] = useState("");
   const [brandName, setBrandName] = useState("Lumay AI");
   const [location, setLocation] = useState("");
+  const [context, setContext] = useState("");
   const [targetWordCount, setTargetWordCount] = useState(2500);
   
   // Advanced keyword options
-  const [keywordIntent, setKeywordIntent] = useState("");
-  const [powerWords, setPowerWords] = useState("");
+  const [keywordIntent, setKeywordIntent] = useState("commercial");
+  const [powerWords, setPowerWords] = useState("Ultimate, Essential, Proven, Expert, Revolutionary");
   const [keywordPrefix, setKeywordPrefix] = useState("");
   const [keywordSuffix, setKeywordSuffix] = useState("");
 
@@ -48,8 +51,9 @@ const AIContentGenerator = () => {
       keywords,
       brandName: brandName || "Lumay AI",
       location: location || undefined,
+      context: context || undefined,
       targetWordCount,
-      keywordIntent: keywordIntent || undefined,
+      keywordIntent: keywordIntent || "commercial",
       powerWords: powerWords || undefined,
       keywordPrefix: keywordPrefix || undefined,
       keywordSuffix: keywordSuffix || undefined,
@@ -101,12 +105,20 @@ const AIContentGenerator = () => {
     }
   };
 
+  // Group LLM questions by funnel
+  const groupedQuestions = generatedContent?.llmQuestions?.reduce((acc, q) => {
+    const funnel = q.funnel || 'TOFU';
+    if (!acc[funnel]) acc[funnel] = [];
+    acc[funnel].push(q);
+    return acc;
+  }, {} as Record<string, typeof generatedContent.llmQuestions>) || {};
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-heading">AI Content Generator</h1>
         <p className="text-muted-foreground mt-1">
-          Generate SEO-optimized blog posts with advanced query ladder keywords and semantic HTML
+          Generate SEO & LLM optimized blog posts with 55 direct-answer questions, query ladder keywords, and TOFU/MOFU/BOFU structure
         </p>
       </div>
 
@@ -119,7 +131,7 @@ const AIContentGenerator = () => {
               Content Parameters
             </CardTitle>
             <CardDescription>
-              Configure your content generation settings
+              Configure your SEO & LLM optimization settings
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -127,7 +139,7 @@ const AIContentGenerator = () => {
               <Label htmlFor="topic">Topic / Title *</Label>
               <Input
                 id="topic"
-                placeholder="e.g., Best AI Tools for Content Marketing in 2024"
+                placeholder="e.g., Best AI Content Writing Course in Chennai"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
               />
@@ -137,7 +149,7 @@ const AIContentGenerator = () => {
               <Label htmlFor="keywords">Primary Keywords *</Label>
               <Textarea
                 id="keywords"
-                placeholder="e.g., AI content tools, content marketing AI, automated writing"
+                placeholder="e.g., AI content writing, content writing course, blog writing training"
                 value={keywords}
                 onChange={(e) => setKeywords(e.target.value)}
                 rows={2}
@@ -151,7 +163,7 @@ const AIContentGenerator = () => {
               <div className="space-y-2">
                 <Label htmlFor="brandName" className="flex items-center gap-1">
                   <Target className="h-3 w-3" />
-                  Brand Name
+                  Brand Name *
                 </Label>
                 <Input
                   id="brandName"
@@ -159,20 +171,34 @@ const AIContentGenerator = () => {
                   value={brandName}
                   onChange={(e) => setBrandName(e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Will appear in every paragraph
+                </p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="location" className="flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
-                  Location
+                  Location (Optional)
                 </Label>
                 <Input
                   id="location"
-                  placeholder="e.g., Dover, DE, USA"
+                  placeholder="e.g., Chennai, India"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="context">Context (Optional)</Label>
+              <Textarea
+                id="context"
+                placeholder="Additional context about your business, unique selling points, or specific angles to cover..."
+                value={context}
+                onChange={(e) => setContext(e.target.value)}
+                rows={2}
+              />
             </div>
 
             <div className="space-y-2">
@@ -184,7 +210,7 @@ const AIContentGenerator = () => {
                 <SelectContent>
                   <SelectItem value="1500">1500+ words</SelectItem>
                   <SelectItem value="2000">2000+ words</SelectItem>
-                  <SelectItem value="2500">2500+ words</SelectItem>
+                  <SelectItem value="2500">2500+ words (Recommended)</SelectItem>
                   <SelectItem value="3000">3000+ words</SelectItem>
                   <SelectItem value="4000">4000+ words</SelectItem>
                 </SelectContent>
@@ -192,12 +218,12 @@ const AIContentGenerator = () => {
             </div>
 
             {/* Advanced Keyword Options */}
-            <Accordion type="single" collapsible className="w-full">
+            <Accordion type="single" collapsible className="w-full" defaultValue="advanced">
               <AccordionItem value="advanced">
                 <AccordionTrigger className="text-sm">
                   <span className="flex items-center gap-2">
                     <Layers className="h-4 w-4" />
-                    Query Ladder Options
+                    Query Ladder & Keyword Options
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-4">
@@ -221,19 +247,25 @@ const AIContentGenerator = () => {
                       <Label htmlFor="keywordPrefix">Keyword Prefix</Label>
                       <Input
                         id="keywordPrefix"
-                        placeholder="e.g., best, top, how to"
+                        placeholder="e.g., best, top, leading"
                         value={keywordPrefix}
                         onChange={(e) => setKeywordPrefix(e.target.value)}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Added before keywords
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="keywordSuffix">Keyword Suffix</Label>
                       <Input
                         id="keywordSuffix"
-                        placeholder="e.g., 2024, guide, tips"
+                        placeholder="e.g., in Chennai, 2024"
                         value={keywordSuffix}
                         onChange={(e) => setKeywordSuffix(e.target.value)}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Added after keywords
+                      </p>
                     </div>
                   </div>
 
@@ -244,7 +276,7 @@ const AIContentGenerator = () => {
                     </Label>
                     <Input
                       id="powerWords"
-                      placeholder="e.g., Ultimate, Essential, Proven, Expert"
+                      placeholder="e.g., Ultimate, Essential, Proven, Expert, Revolutionary"
                       value={powerWords}
                       onChange={(e) => setPowerWords(e.target.value)}
                     />
@@ -265,12 +297,12 @@ const AIContentGenerator = () => {
               {isGenerating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating Content...
+                  Generating (30-60 sec)...
                 </>
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Generate Content
+                  Generate SEO Content
                 </>
               )}
             </Button>
@@ -286,133 +318,159 @@ const AIContentGenerator = () => {
                 Query Ladder Keywords
               </CardTitle>
               <CardDescription>
-                AI-generated keyword ecosystem for SEO optimization
+                Complete keyword ecosystem with distance, semantic, and LLM keywords
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 max-h-[600px] overflow-y-auto">
-              <div>
-                <Label className="text-xs text-muted-foreground">Primary Keyword</Label>
-                <Badge className="mt-1 text-base">{generatedContent.keywords.primary}</Badge>
-              </div>
-
-              {generatedContent.keywords.withPrefix?.length > 0 && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">With Prefix</Label>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {generatedContent.keywords.withPrefix.map((kw, i) => (
-                      <Badge key={i} variant="secondary">{kw}</Badge>
-                    ))}
+            <CardContent>
+              <ScrollArea className="h-[600px] pr-4">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Primary Keyword</Label>
+                    <Badge className="mt-1 text-base">{generatedContent.keywords.primary}</Badge>
                   </div>
-                </div>
-              )}
 
-              {generatedContent.keywords.withSuffix?.length > 0 && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">With Suffix</Label>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {generatedContent.keywords.withSuffix.map((kw, i) => (
-                      <Badge key={i} variant="secondary">{kw}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <Label className="text-xs text-muted-foreground">LSI Keywords</Label>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {generatedContent.keywords.lsi?.map((kw, i) => (
-                    <Badge key={i} variant="outline">{kw}</Badge>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-xs text-muted-foreground">Semantic Keywords</Label>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {generatedContent.keywords.semantic?.map((kw, i) => (
-                    <Badge key={i} variant="outline">{kw}</Badge>
-                  ))}
-                </div>
-              </div>
-
-              {generatedContent.keywords.distance && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Distance Keywords</Label>
-                  <div className="space-y-2 mt-1">
+                  {generatedContent.keywords.coreVariations?.length > 0 && (
                     <div>
-                      <span className="text-xs text-green-600">Close:</span>
-                      <div className="flex flex-wrap gap-1">
-                        {generatedContent.keywords.distance.close?.map((kw, i) => (
-                          <Badge key={i} className="bg-green-100 text-green-800 text-xs">{kw}</Badge>
+                      <Label className="text-xs text-muted-foreground">Core Variations</Label>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {generatedContent.keywords.coreVariations.map((kw, i) => (
+                          <Badge key={i} variant="default" className="bg-primary/80">{kw}</Badge>
                         ))}
                       </div>
                     </div>
+                  )}
+
+                  {generatedContent.keywords.secondary?.length > 0 && (
                     <div>
-                      <span className="text-xs text-yellow-600">Medium:</span>
-                      <div className="flex flex-wrap gap-1">
-                        {generatedContent.keywords.distance.medium?.map((kw, i) => (
-                          <Badge key={i} className="bg-yellow-100 text-yellow-800 text-xs">{kw}</Badge>
+                      <Label className="text-xs text-muted-foreground">Secondary Keywords</Label>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {generatedContent.keywords.secondary.map((kw, i) => (
+                          <Badge key={i} variant="secondary">{kw}</Badge>
                         ))}
                       </div>
                     </div>
+                  )}
+
+                  {generatedContent.keywords.withPrefix?.length > 0 && (
                     <div>
-                      <span className="text-xs text-orange-600">Far:</span>
-                      <div className="flex flex-wrap gap-1">
-                        {generatedContent.keywords.distance.far?.map((kw, i) => (
-                          <Badge key={i} className="bg-orange-100 text-orange-800 text-xs">{kw}</Badge>
+                      <Label className="text-xs text-muted-foreground">With Prefix</Label>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {generatedContent.keywords.withPrefix.map((kw, i) => (
+                          <Badge key={i} variant="outline" className="border-primary text-primary">{kw}</Badge>
                         ))}
                       </div>
                     </div>
-                  </div>
-                </div>
-              )}
+                  )}
 
-              <div>
-                <Label className="text-xs text-muted-foreground">Long-tail Queries</Label>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {generatedContent.keywords.longTail?.map((kw, i) => (
-                    <Badge key={i} variant="secondary" className="text-xs">{kw}</Badge>
-                  ))}
-                </div>
-              </div>
+                  {generatedContent.keywords.withSuffix?.length > 0 && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">With Suffix</Label>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {generatedContent.keywords.withSuffix.map((kw, i) => (
+                          <Badge key={i} variant="outline" className="border-primary text-primary">{kw}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-              {generatedContent.keywords.llmQueries?.length > 0 && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">LLM/AI Queries</Label>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {generatedContent.keywords.llmQueries.map((kw, i) => (
-                      <Badge key={i} className="bg-purple-100 text-purple-800 text-xs">{kw}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {generatedContent.keywords.nlpEntities?.length > 0 && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">NLP Entities</Label>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {generatedContent.keywords.nlpEntities.map((kw, i) => (
-                      <Badge key={i} className="bg-blue-100 text-blue-800 text-xs">{kw}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {generatedContent.keywords.intentBased && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Intent-Based Keywords</Label>
-                  <div className="space-y-1 mt-1 text-xs">
-                    {Object.entries(generatedContent.keywords.intentBased).map(([intent, kws]) => (
-                      kws && kws.length > 0 && (
-                        <div key={intent}>
-                          <span className="capitalize font-medium">{intent}:</span>
-                          <span className="text-muted-foreground ml-1">{kws.join(', ')}</span>
+                  {generatedContent.keywords.distance && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Distance Keywords (Semantic Relatedness)</Label>
+                      <div className="space-y-2 mt-1">
+                        <div>
+                          <span className="text-xs text-green-600 font-medium">Close (80-100%):</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {generatedContent.keywords.distance.close?.map((kw, i) => (
+                              <Badge key={i} className="bg-green-100 text-green-800 text-xs">{kw}</Badge>
+                            ))}
+                          </div>
                         </div>
-                      )
-                    ))}
+                        <div>
+                          <span className="text-xs text-yellow-600 font-medium">Medium (50-80%):</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {generatedContent.keywords.distance.medium?.map((kw, i) => (
+                              <Badge key={i} className="bg-yellow-100 text-yellow-800 text-xs">{kw}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-xs text-orange-600 font-medium">Far (20-50%):</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {generatedContent.keywords.distance.far?.map((kw, i) => (
+                              <Badge key={i} className="bg-orange-100 text-orange-800 text-xs">{kw}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <Label className="text-xs text-muted-foreground">LSI Keywords</Label>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {generatedContent.keywords.lsi?.map((kw, i) => (
+                        <Badge key={i} variant="outline">{kw}</Badge>
+                      ))}
+                    </div>
                   </div>
+
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Semantic Keywords</Label>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {generatedContent.keywords.semantic?.map((kw, i) => (
+                        <Badge key={i} variant="outline">{kw}</Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Long-tail Queries</Label>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {generatedContent.keywords.longTail?.map((kw, i) => (
+                        <Badge key={i} variant="secondary" className="text-xs">{kw}</Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {generatedContent.keywords.llmQueries?.length > 0 && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">LLM/AI Queries</Label>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {generatedContent.keywords.llmQueries.map((kw, i) => (
+                          <Badge key={i} className="bg-purple-100 text-purple-800 text-xs">{kw}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {generatedContent.keywords.nlpEntities?.length > 0 && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">NLP Entities</Label>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {generatedContent.keywords.nlpEntities.map((kw, i) => (
+                          <Badge key={i} className="bg-blue-100 text-blue-800 text-xs">{kw}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {generatedContent.keywords.intentBased && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Intent-Based Keywords</Label>
+                      <div className="space-y-1 mt-1 text-xs">
+                        {Object.entries(generatedContent.keywords.intentBased).map(([intent, kws]) => (
+                          kws && kws.length > 0 && (
+                            <div key={intent}>
+                              <span className="capitalize font-medium">{intent}:</span>
+                              <span className="text-muted-foreground ml-1">{kws.join(', ')}</span>
+                            </div>
+                          )
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </ScrollArea>
             </CardContent>
           </Card>
         )}
@@ -430,6 +488,7 @@ const AIContentGenerator = () => {
               <CardDescription>
                 {generatedContent.wordCount} words • {generatedContent.readingTime} min read
                 {generatedContent.keywordDensity && ` • ${generatedContent.keywordDensity}% keyword density`}
+                {generatedContent.llmQuestions && ` • ${generatedContent.llmQuestions.length} LLM Questions`}
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -456,11 +515,12 @@ const AIContentGenerator = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="preview">
-              <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+              <TabsList className="grid grid-cols-6 w-full max-w-3xl">
                 <TabsTrigger value="preview">Preview</TabsTrigger>
-                <TabsTrigger value="html">HTML Code</TabsTrigger>
-                <TabsTrigger value="meta">Meta & SEO</TabsTrigger>
+                <TabsTrigger value="html">HTML</TabsTrigger>
+                <TabsTrigger value="llm-questions">55 Questions</TabsTrigger>
                 <TabsTrigger value="faqs">FAQs</TabsTrigger>
+                <TabsTrigger value="meta">Meta</TabsTrigger>
                 <TabsTrigger value="toc">TOC</TabsTrigger>
               </TabsList>
 
@@ -491,7 +551,7 @@ const AIContentGenerator = () => {
 
                   {generatedContent.directAnswer && (
                     <aside className="border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-950/20 pl-4 py-3 pr-4 rounded-r-lg">
-                      <h3 className="font-semibold text-sm text-amber-700 dark:text-amber-400 mb-1">Direct Answer</h3>
+                      <h3 className="font-semibold text-sm text-amber-700 dark:text-amber-400 mb-1">Direct Answer (Featured Snippet)</h3>
                       <p className="text-sm">{generatedContent.directAnswer}</p>
                     </aside>
                   )}
@@ -517,6 +577,99 @@ const AIContentGenerator = () => {
                     <code>{generatedContent.content}</code>
                   </pre>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="llm-questions" className="mt-4">
+                <div className="space-y-6">
+                  <p className="text-sm text-muted-foreground">
+                    55 LLM Direct-Answer Questions optimized for AI assistants and featured snippets, clustered by funnel stage.
+                  </p>
+                  
+                  {/* TOFU Questions */}
+                  {groupedQuestions['TOFU']?.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-green-600">
+                        <TrendingUp className="h-5 w-5" />
+                        <h3 className="font-semibold">TOFU - Awareness ({groupedQuestions['TOFU'].length} questions)</h3>
+                      </div>
+                      <div className="space-y-2">
+                        {groupedQuestions['TOFU'].map((q, i) => (
+                          <div key={i} className="border border-green-200 bg-green-50 dark:bg-green-950/20 rounded-lg p-3">
+                            <h4 className="font-medium text-sm flex items-center gap-2">
+                              <MessageCircleQuestion className="h-4 w-4 text-green-600" />
+                              {q.question}
+                            </h4>
+                            <p className="mt-1 text-sm text-muted-foreground">{q.answer}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* MOFU Questions */}
+                  {groupedQuestions['MOFU']?.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-blue-600">
+                        <Users className="h-5 w-5" />
+                        <h3 className="font-semibold">MOFU - Consideration ({groupedQuestions['MOFU'].length} questions)</h3>
+                      </div>
+                      <div className="space-y-2">
+                        {groupedQuestions['MOFU'].map((q, i) => (
+                          <div key={i} className="border border-blue-200 bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3">
+                            <h4 className="font-medium text-sm flex items-center gap-2">
+                              <MessageCircleQuestion className="h-4 w-4 text-blue-600" />
+                              {q.question}
+                            </h4>
+                            <p className="mt-1 text-sm text-muted-foreground">{q.answer}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* BOFU Questions */}
+                  {groupedQuestions['BOFU']?.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-purple-600">
+                        <ShoppingCart className="h-5 w-5" />
+                        <h3 className="font-semibold">BOFU - Decision ({groupedQuestions['BOFU'].length} questions)</h3>
+                      </div>
+                      <div className="space-y-2">
+                        {groupedQuestions['BOFU'].map((q, i) => (
+                          <div key={i} className="border border-purple-200 bg-purple-50 dark:bg-purple-950/20 rounded-lg p-3">
+                            <h4 className="font-medium text-sm flex items-center gap-2">
+                              <MessageCircleQuestion className="h-4 w-4 text-purple-600" />
+                              {q.question}
+                            </h4>
+                            <p className="mt-1 text-sm text-muted-foreground">{q.answer}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(!generatedContent.llmQuestions || generatedContent.llmQuestions.length === 0) && (
+                    <p className="text-muted-foreground">No LLM questions generated</p>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="faqs" className="mt-4">
+                {generatedContent.faqs && generatedContent.faqs.length > 0 ? (
+                  <div className="space-y-4">
+                    {generatedContent.faqs.map((faq, i) => (
+                      <div key={i} className="border rounded-lg p-4">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <HelpCircle className="h-4 w-4 text-primary" />
+                          {faq.question}
+                        </h4>
+                        <p className="mt-2 text-sm text-muted-foreground">{faq.answer}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No FAQs generated</p>
+                )}
               </TabsContent>
 
               <TabsContent value="meta" className="mt-4 space-y-4">
@@ -550,24 +703,6 @@ const AIContentGenerator = () => {
                       {JSON.stringify(generatedContent.schemaMarkup, null, 2)}
                     </pre>
                   </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="faqs" className="mt-4">
-                {generatedContent.faqs && generatedContent.faqs.length > 0 ? (
-                  <div className="space-y-4">
-                    {generatedContent.faqs.map((faq, i) => (
-                      <div key={i} className="border rounded-lg p-4">
-                        <h4 className="font-semibold flex items-center gap-2">
-                          <HelpCircle className="h-4 w-4 text-primary" />
-                          {faq.question}
-                        </h4>
-                        <p className="mt-2 text-sm text-muted-foreground">{faq.answer}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">No FAQs generated</p>
                 )}
               </TabsContent>
 
