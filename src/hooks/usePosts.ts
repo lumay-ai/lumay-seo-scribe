@@ -222,3 +222,32 @@ export const useSearchPosts = (query: string, categorySlug?: string, tagSlug?: s
     enabled: true,
   });
 };
+
+export const useRelatedPosts = (categoryId: string | undefined, currentPostId: string | undefined, limit: number = 4) => {
+  return useQuery({
+    queryKey: ["related-posts", categoryId, currentPostId, limit],
+    queryFn: async () => {
+      if (!categoryId || !currentPostId) return [];
+
+      const { data, error } = await supabase
+        .from("posts")
+        .select(`
+          id,
+          title,
+          slug,
+          excerpt,
+          featured_image_url,
+          category:categories(name, slug)
+        `)
+        .eq("status", "published")
+        .eq("category_id", categoryId)
+        .neq("id", currentPostId)
+        .order("published_at", { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!categoryId && !!currentPostId,
+  });
+};
