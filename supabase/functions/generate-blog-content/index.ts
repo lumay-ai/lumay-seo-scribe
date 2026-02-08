@@ -225,9 +225,27 @@ Make it informative, engaging, and optimized for both readers, search engines, a
     // Parse the JSON response from AI
     let parsedContent;
     try {
-      // Extract JSON from potential markdown code blocks
-      const jsonMatch = content.match(/```json\n?([\s\S]*?)\n?```/) || content.match(/```\n?([\s\S]*?)\n?```/);
-      const jsonStr = jsonMatch ? jsonMatch[1] : content;
+      // Extract JSON from potential markdown code blocks - try multiple patterns
+      let jsonStr = content;
+      
+      // Pattern 1: ```json ... ```
+      const jsonBlockMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonBlockMatch) {
+        jsonStr = jsonBlockMatch[1];
+      } else {
+        // Pattern 2: ``` ... ```
+        const codeBlockMatch = content.match(/```\s*([\s\S]*?)\s*```/);
+        if (codeBlockMatch) {
+          jsonStr = codeBlockMatch[1];
+        } else {
+          // Pattern 3: Find JSON object directly (starts with { and ends with })
+          const jsonObjectMatch = content.match(/\{[\s\S]*\}/);
+          if (jsonObjectMatch) {
+            jsonStr = jsonObjectMatch[0];
+          }
+        }
+      }
+      
       parsedContent = JSON.parse(jsonStr.trim());
       
       // Generate plain text version if not provided

@@ -9,13 +9,20 @@ import AuthorCard from "@/components/AuthorCard";
 import ReadingProgress from "@/components/ReadingProgress";
 import SEOHead from "@/components/SEOHead";
 import TableOfContents from "@/components/TableOfContents";
-import { usePost } from "@/hooks/usePosts";
+import SocialShare from "@/components/SocialShare";
+import RelatedPosts from "@/components/RelatedPosts";
+import { usePost, useRelatedPosts } from "@/hooks/usePosts";
 import { useTrackPageView } from "@/hooks/useAnalytics";
-import { SEOMeta, TableOfContentsItem } from "@/types/blog";
+import { SEOMeta, TableOfContentsItem, BlogPost as BlogPostType } from "@/types/blog";
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: post, isLoading, error } = usePost(slug || "");
+  const { data: relatedPosts = [] } = useRelatedPosts(
+    post?.category_id || undefined,
+    post?.id,
+    4
+  );
   const trackPageView = useTrackPageView();
 
   // Track page view
@@ -280,18 +287,51 @@ const BlogPost = () => {
 
                   {/* Share Section */}
                   <div className="p-4 bg-card border border-border rounded-lg">
-                    <h3 className="font-heading text-lg font-semibold text-heading mb-2">
+                    <h3 className="font-heading text-lg font-semibold text-heading mb-4">
                       Share this article
                     </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Found this helpful? Share it with others!
-                    </p>
+                    <SocialShare 
+                      postId={post.id} 
+                      title={post.title} 
+                      url={pageUrl} 
+                    />
                   </div>
                 </div>
               </aside>
             </div>
           </div>
         </div>
+
+        {/* Related Posts Section */}
+        {relatedPosts.length > 0 && (
+          <div className="py-12 bg-secondary/30">
+            <div className="container max-w-6xl">
+              <RelatedPosts 
+                posts={relatedPosts.map((p: any) => ({
+                  id: p.id,
+                  slug: p.slug,
+                  title: p.title,
+                  excerpt: p.excerpt || "",
+                  category: p.category?.name || "Uncategorized",
+                  featuredImage: p.featured_image_url || "",
+                  featuredImageAlt: p.title,
+                  author: { name: "", avatar: "", bio: "", role: "" },
+                  publishedAt: "",
+                  updatedAt: "",
+                  readingTime: 0,
+                  tags: [],
+                  seo: {} as any,
+                  faqs: [],
+                  sources: [],
+                  relatedPosts: [],
+                  tableOfContents: [],
+                  schema: {} as any,
+                  content: ""
+                } as BlogPostType))}
+              />
+            </div>
+          </div>
+        )}
       </main>
 
       <Footer />
