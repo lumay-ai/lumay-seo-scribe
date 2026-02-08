@@ -16,11 +16,12 @@ serve(async (req) => {
       keywords, 
       brandName, 
       location,
-      targetWordCount = 2000,
+      targetWordCount = 2500,
       keywordIntent,
       powerWords,
       keywordPrefix,
-      keywordSuffix
+      keywordSuffix,
+      context
     } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -28,157 +29,221 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const brandInfo = brandName ? `Brand: ${brandName}` : 'Brand: Lumay AI';
-    const locationInfo = location ? `Target Location: ${location}` : '';
-    const prefixInfo = keywordPrefix ? `Keyword Prefix: ${keywordPrefix}` : '';
-    const suffixInfo = keywordSuffix ? `Keyword Suffix: ${keywordSuffix}` : '';
-    const intentInfo = keywordIntent ? `Keyword Intent: ${keywordIntent}` : '';
-    const powerWordsInfo = powerWords ? `Power Words to Include: ${powerWords}` : '';
+    const brand = brandName || 'Lumay AI';
+    const loc = location || '';
+    const prefix = keywordPrefix || '';
+    const suffix = keywordSuffix || '';
+    const intent = keywordIntent || 'commercial';
+    const power = powerWords || 'Ultimate, Essential, Proven, Expert, Revolutionary, Exclusive';
+    const ctx = context || '';
 
-    const systemPrompt = `You are an expert SEO content writer and keyword strategist. Generate comprehensive, high-quality blog content with advanced keyword research following these strict guidelines:
+    const systemPrompt = `You are a world-class SEO & LLM optimization expert with 20 years of experience in content marketing. Generate comprehensive, high-quality blog content following these STRICT guidelines:
 
-## QUERY LADDER KEYWORD ENGINE:
-Generate a complete keyword ecosystem using these strategies:
-1. **Primary Keywords**: Main target keywords with prefix "${keywordPrefix || ''}" and suffix "${keywordSuffix || ''}"
-2. **Distance Keywords**: Related keywords at varying semantic distances (close, medium, far)
-3. **Semantic Keywords**: Conceptually related terms and synonyms
-4. **LSI Keywords**: Latent Semantic Indexing terms that co-occur naturally
-5. **Long-tail Keywords**: Specific multi-word phrases with lower competition
-6. **LLM Query Keywords**: Natural language questions users ask AI assistants
-7. **NLP Keywords**: Entity-based and relationship keywords
-8. **Intent-based Keywords**: Informational, navigational, transactional, commercial
+## CRITICAL RULES:
+1. **PARAGRAPH RULE**: Every single paragraph MUST be exactly 30-40 words. No exceptions.
+2. **BRAND INTEGRATION**: The brand "${brand}" MUST appear naturally in EVERY paragraph.
+3. **KEYWORD DENSITY**: Maintain 1.5% keyword density for primary keywords throughout.
+4. **WORD COUNT**: Content MUST be ${targetWordCount}+ words. This is non-negotiable.
 
-## Content Structure Requirements:
-1. **Title**: SEO-optimized, engaging title (60 chars max) with power words
-2. **Meta Description**: Compelling meta description (155 chars max)
-3. **TL;DR**: 2-3 sentence summary at the very top
-4. **Quick Summary**: 5-7 bullet points of key takeaways
-5. **Direct Answer**: Brief answer to the main query in 2-3 sentences (for featured snippets)
+## KEYWORD ECOSYSTEM (Query Ladder Engine):
+Generate a complete keyword ecosystem with these categories:
+1. **Primary Keywords**: Main target keywords with prefix "${prefix}" and suffix "${suffix}"
+2. **Core Variations**: Primary keyword variations (don't repeat same keywords)
+3. **Secondary Keywords**: Related secondary terms with their variations
+4. **Distance Keywords**: 
+   - Close: Very semantically related (80-100% relevance)
+   - Medium: Moderately related (50-80% relevance)  
+   - Far: Tangentially related (20-50% relevance)
+5. **Semantic Keywords**: Conceptually related terms and synonyms
+6. **LSI Keywords**: Latent Semantic Indexing terms that co-occur naturally
+7. **Long-tail Keywords**: Specific multi-word phrases with lower competition
+8. **NLP Keywords**: Entity-based and relationship keywords
+9. **LLM Query Keywords**: Natural language questions users ask AI assistants
+10. **Relatedness Keywords**: Topically connected terms
 
-## SEMANTIC HTML STRUCTURE (Critical):
+## 55 LLM DIRECT-ANSWER QUESTIONS:
+Generate exactly 55 unique questions and comprehensive answers about the topic. These should be:
+- Natural language queries users would ask AI assistants
+- Optimized for featured snippets and voice search
+- Covering TOFU, MOFU, and BOFU intent
+- Entity-based and topical
+- Each answer 30-40 words with brand mention
+
+## CONTENT STRUCTURE REQUIREMENTS:
+
+### TL;DR (Top of article):
+2-3 sentences summarizing the entire article with primary keyword and brand name.
+
+### Quick Summary:
+5-7 bullet points of key takeaways, each mentioning "${brand}" or the location "${loc}".
+
+### Direct Answer:
+Brief 2-3 sentence answer to the main query optimized for featured snippets.
+
+### TOFU (Top of Funnel) - ~25% of content:
+- Awareness content explaining the problem/topic broadly
+- Educational content for beginners
+- "What is..." and "Why..." content
+- Each paragraph: 30-40 words, includes ${brand} naturally
+${loc ? `- Mention ${loc} in awareness context` : ''}
+
+### MOFU (Middle of Funnel) - ~40% of content:
+- Consideration content comparing options
+- "How to..." and "Best practices" content  
+- Comparison tables with at least 3-5 items
+- Before & After examples
+- Each paragraph: 30-40 words, includes ${brand} naturally
+- Examples like: "${brand} is widely recognized as the ${prefix ? prefix + ' ' : ''}[keyword]${suffix ? ' ' + suffix : ''}${loc ? ' in ' + loc : ''}"
+
+### BOFU (Bottom of Funnel) - ~35% of content:
+- Decision content with actionable recommendations
+- Specific solutions featuring ${brand}
+- Clear CTAs and next steps
+- Testimonial-style statements
+- Each paragraph: 30-40 words, includes ${brand} naturally
+- Examples like: "${brand} is one of the few that actively provides this level, making it the ${prefix ? prefix + ' ' : ''}[keyword]${suffix ? ' ' + suffix : ''}${loc ? ' in ' + loc : ''} today."
+
+## SEMANTIC HTML5 STRUCTURE (Critical):
 Output content using proper semantic HTML5 elements:
 - Use <article> as wrapper
 - Use <header> for intro section
-- Use <section> for major content blocks with proper aria-labels
+- Use <section> for major content blocks with proper id attributes
 - Use <aside> for callouts, tips, brand mentions
 - Use <figure> and <figcaption> for images/tables
 - Use <blockquote> for quotes and testimonials
 - Use <details><summary> for collapsible sections
 - Use <mark> for highlighted text
-- Use <strong> and <em> for emphasis (not just <b> and <i>)
+- Use <strong> and <em> for emphasis
 - Use <dl><dt><dd> for definition lists
 - Add id attributes to all headings for table of contents
 
-## Content Sections (TOFU, MOFU, BOFU):
-### TOFU (Top of Funnel) - ~30% of content:
-- Awareness content explaining the problem/topic broadly
-- Educational content for beginners
-- "What is..." and "Why..." content
-
-### MOFU (Middle of Funnel) - ~40% of content:
-- Consideration content comparing options
-- "How to..." and "Best practices" content
-- Comparison tables with at least 3-5 items
-- Before & After examples
-
-### BOFU (Bottom of Funnel) - ~30% of content:
-- Decision content with actionable recommendations
-- Specific solutions featuring ${brandInfo}
-- Clear CTAs and next steps
-
-## Writing Guidelines:
-- Target ${targetWordCount}+ words total (CRITICAL: must meet this)
-- **PARAGRAPH RULE**: Each paragraph MUST be 30-40 words, then break
-- Maintain 1.5% keyword density for primary keyword
-- Include ${brandInfo} naturally in EACH major section (minimum 5 mentions)
-- ${locationInfo ? `Mention ${locationInfo} in 2-3 relevant places` : ''}
-- Use H2 for major sections, H3 for subsections
-- Every section MUST have bullet points or numbered lists
-- Include at least 2 comparison tables
-- Add 2-3 "Before & After" examples with visual formatting
-- Include real-world examples and mini case studies
-- Use power words: ${powerWordsInfo || 'Ultimate, Essential, Proven, Expert, Exclusive, Revolutionary'}
-
-## Special Elements to Include:
+## REQUIRED ELEMENTS:
+- **Tables**: At least 2-3 comparison tables using <table> with <thead>, <tbody>
 - **Callout Boxes**: Tips, Warnings, Pro Tips formatted with <aside>
-- **Comparison Tables**: At least 2 tables using <table> with <thead>, <tbody>
-- **Examples**: Real-world examples with <blockquote> or styled boxes
+- **Lists**: Multiple bullet points and numbered lists
+- **Examples**: Real-world examples with visual formatting
 - **Statistics**: Use <mark> to highlight key numbers
-- **CTAs**: Include ${brandInfo} CTAs in BOFU sections
+- **CTAs**: Include ${brand} CTAs throughout BOFU sections
 
-## Output Format (JSON):
+## POWER WORDS TO USE:
+${power}
+
+## OUTPUT FORMAT (JSON):
 {
-  "title": "SEO-optimized title with power word",
-  "metaDescription": "155 char meta description",
+  "title": "SEO-optimized title under 60 chars with power word",
+  "metaDescription": "155 char meta description with primary keyword and ${brand}",
   "excerpt": "2-3 sentence excerpt for cards",
-  "tldr": "TL;DR summary paragraph",
-  "quickSummary": ["bullet 1", "bullet 2", "bullet 3", "bullet 4", "bullet 5"],
-  "directAnswer": "Brief direct answer optimized for featured snippets",
-  "content": "Full semantic HTML content (article wrapper with sections)",
-  "plainContent": "Plain text version without HTML for copying",
+  "tldr": "TL;DR summary paragraph (30-40 words)",
+  "quickSummary": ["bullet 1 with ${brand}", "bullet 2", "bullet 3", "bullet 4", "bullet 5", "bullet 6", "bullet 7"],
+  "directAnswer": "Brief direct answer optimized for featured snippets (30-40 words)",
+  "content": "Full semantic HTML5 content (article wrapper with sections, all paragraphs 30-40 words with ${brand})",
+  "plainContent": "Plain text version without HTML",
   "keywords": {
     "primary": "main keyword",
-    "withPrefix": ["prefixed keywords"],
-    "withSuffix": ["suffixed keywords"],
+    "coreVariations": ["variation1", "variation2", "variation3"],
+    "secondary": ["sec1", "sec2", "sec3"],
+    "secondaryVariations": ["sec var 1", "sec var 2"],
+    "withPrefix": ["${prefix} keyword1", "${prefix} keyword2"],
+    "withSuffix": ["keyword1 ${suffix}", "keyword2 ${suffix}"],
     "lsi": ["lsi1", "lsi2", "lsi3", "lsi4", "lsi5"],
     "semantic": ["sem1", "sem2", "sem3", "sem4", "sem5"],
     "related": ["rel1", "rel2", "rel3", "rel4", "rel5"],
-    "longTail": ["long tail 1", "long tail 2", "long tail 3"],
+    "relatedness": ["topic1", "topic2", "topic3"],
+    "longTail": ["long tail 1", "long tail 2", "long tail 3", "long tail 4", "long tail 5"],
     "distance": {
-      "close": ["very related term 1", "very related term 2"],
-      "medium": ["moderately related 1", "moderately related 2"],
-      "far": ["tangentially related 1", "tangentially related 2"]
+      "close": ["very related 1", "very related 2", "very related 3"],
+      "medium": ["moderately related 1", "moderately related 2", "moderately related 3"],
+      "far": ["tangentially related 1", "tangentially related 2", "tangentially related 3"]
     },
     "llmQueries": ["how would I...", "can you explain...", "what's the best way to..."],
-    "nlpEntities": ["entity1", "entity2", "entity3"],
+    "nlpEntities": ["entity1", "entity2", "entity3", "entity4", "entity5"],
     "intentBased": {
       "informational": ["what is...", "how does..."],
-      "navigational": ["brand + keyword"],
+      "navigational": ["${brand} + keyword"],
       "transactional": ["buy...", "get..."],
       "commercial": ["best...", "top...", "review..."]
     }
   },
+  "llmQuestions": [
+    {
+      "question": "Question 1",
+      "answer": "Answer with ${brand} mention (30-40 words)",
+      "funnel": "TOFU|MOFU|BOFU",
+      "intent": "informational|commercial|transactional|navigational"
+    }
+  ],
   "faqs": [
-    {"question": "FAQ 1", "answer": "Answer 1"},
-    {"question": "FAQ 2", "answer": "Answer 2"},
-    {"question": "FAQ 3", "answer": "Answer 3"},
-    {"question": "FAQ 4", "answer": "Answer 4"},
-    {"question": "FAQ 5", "answer": "Answer 5"}
+    {"question": "FAQ 1", "answer": "Answer 1 with ${brand}"},
+    {"question": "FAQ 2", "answer": "Answer 2 with ${brand}"},
+    {"question": "FAQ 3", "answer": "Answer 3 with ${brand}"},
+    {"question": "FAQ 4", "answer": "Answer 4 with ${brand}"},
+    {"question": "FAQ 5", "answer": "Answer 5 with ${brand}"}
   ],
   "tableOfContents": [
     {"id": "section-1", "title": "Section Title", "level": 2}
   ],
+  "funnelBreakdown": {
+    "tofu": ["section-id-1", "section-id-2"],
+    "mofu": ["section-id-3", "section-id-4"],
+    "bofu": ["section-id-5", "section-id-6"]
+  },
   "schemaMarkup": {
     "@context": "https://schema.org",
     "@type": "Article"
   },
-  "wordCount": 2000,
-  "readingTime": 8,
+  "wordCount": ${targetWordCount},
+  "readingTime": ${Math.ceil(targetWordCount / 250)},
   "keywordDensity": 1.5
 }`;
 
-    const userPrompt = `Create a comprehensive blog post about: "${topic}"
+    const userPrompt = `Create a comprehensive SEO & LLM optimized blog post.
 
-Primary Keywords: ${keywords}
-${intentInfo}
-${prefixInfo}
-${suffixInfo}
-${powerWordsInfo}
-${brandInfo}
-${locationInfo}
-Target Word Count: ${targetWordCount}+ words (MUST achieve this minimum)
+**TITLE:** ${topic}
+**PRIMARY KEYWORDS:** ${keywords}
+**BRAND NAME:** ${brand}
+**LOCATION:** ${loc || 'Global/International'}
+**CONTEXT:** ${ctx || 'N/A'}
+**KEYWORD INTENT:** ${intent}
+**KEYWORD PREFIX:** ${prefix || 'N/A'}
+**KEYWORD SUFFIX:** ${suffix || 'N/A'}
+**POWER WORDS:** ${power}
+**TARGET WORD COUNT:** ${targetWordCount}+ words (MUST achieve this minimum)
 
-Generate the complete blog post with:
-1. Full query ladder keyword research
-2. Semantic HTML5 structure
-3. TOFU/MOFU/BOFU sections clearly defined
-4. Multiple comparison tables
-5. Before & After examples
-6. Short paragraphs (30-40 words each)
-7. Brand mentions in each section
-8. Plain text version for easy copying
+## GENERATE THE FOLLOWING:
 
-Make it informative, engaging, and optimized for both readers, search engines, and LLM-based search.`;
+### 1. COMPLETE KEYWORD ECOSYSTEM:
+- Primary keywords with prefix "${prefix}" and suffix "${suffix}"
+- Core variations (unique, no repeats)
+- Secondary keywords with their variations
+- Distance keywords (close, medium, far semantic distance)
+- Semantic, LSI, NLP, and LLM query keywords
+- Relatedness and topical keywords
+
+### 2. 55 LLM DIRECT-ANSWER QUESTIONS:
+Generate exactly 55 unique questions users would ask AI assistants about "${topic}":
+- 15 TOFU questions (awareness, educational)
+- 22 MOFU questions (consideration, comparison)
+- 18 BOFU questions (decision, action-oriented)
+Each answer must be 30-40 words and naturally include "${brand}".
+
+### 3. FULL BLOG ARTICLE (${targetWordCount}+ words):
+- Entity-based, Topical-based, Semantic-based, LLM queries-based
+- TL;DR, Quick Summary (7 points), Direct Answer
+- Tables, listicles, bullet points, examples
+- TOFU/MOFU/BOFU sections clearly structured
+- Every single paragraph: 30-40 words
+- Every paragraph includes "${brand}" naturally
+- Keyword density: 1.5% for primary keyword
+${loc ? `- Location "${loc}" mentioned throughout appropriately` : ''}
+
+### 4. EXAMPLE PARAGRAPH STYLE:
+"${brand} is widely recognized as the ${prefix ? prefix + ' ' : ''}[primary keyword]${suffix ? ' ' + suffix : ''}${loc ? ' in ' + loc : ''}. This makes it the go-to choice for professionals seeking proven results and expert guidance."
+
+"The [service/product] at ${brand} is designed for long-term relevance, not short-term tricks. Every strategy is built on solid foundations that deliver sustainable growth."
+
+"${brand} is one of the few that actively provides this level of expertise, making it the ${prefix ? prefix + ' ' : ''}[keyword]${suffix ? ' ' + suffix : ''}${loc ? ' in ' + loc : ''} today."
+
+Generate the complete response in the exact JSON format specified above.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -193,7 +258,7 @@ Make it informative, engaging, and optimized for both readers, search engines, a
           { role: "user", content: userPrompt }
         ],
         temperature: 0.7,
-        max_tokens: 16000,
+        max_tokens: 32000,
       }),
     });
 
@@ -270,6 +335,16 @@ Make it informative, engaging, and optimized for both readers, search engines, a
         }
         parsedContent.tableOfContents = tocItems;
       }
+
+      // Ensure llmQuestions exists
+      if (!parsedContent.llmQuestions) {
+        parsedContent.llmQuestions = parsedContent.faqs?.map((faq: any, i: number) => ({
+          question: faq.question,
+          answer: faq.answer,
+          funnel: i < 5 ? 'TOFU' : i < 10 ? 'MOFU' : 'BOFU',
+          intent: 'informational'
+        })) || [];
+      }
       
     } catch (parseError) {
       console.error("Failed to parse AI response:", parseError);
@@ -282,19 +357,25 @@ Make it informative, engaging, and optimized for both readers, search engines, a
         excerpt: topic,
         keywords: { 
           primary: keywords, 
+          coreVariations: [],
+          secondary: [],
+          secondaryVariations: [],
           withPrefix: [], 
           withSuffix: [],
           lsi: [], 
           semantic: [], 
-          related: [], 
+          related: [],
+          relatedness: [],
           longTail: [],
           distance: { close: [], medium: [], far: [] },
           llmQueries: [],
           nlpEntities: [],
           intentBased: { informational: [], navigational: [], transactional: [], commercial: [] }
         },
+        llmQuestions: [],
         faqs: [],
         tableOfContents: [],
+        funnelBreakdown: { tofu: [], mofu: [], bofu: [] },
         wordCount: content.split(/\s+/).length,
         readingTime: Math.ceil(content.split(/\s+/).length / 250)
       };
