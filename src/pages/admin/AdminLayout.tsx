@@ -12,7 +12,8 @@ import {
   ChevronLeft,
   BarChart3,
   User,
-  Sparkles
+  Sparkles,
+  Key
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ const navItems = [
   { icon: Tags, label: "Tags", href: "/admin/tags" },
   { icon: Users, label: "Team", href: "/admin/team" },
   { icon: User, label: "Profile", href: "/admin/profile" },
+  { icon: Key, label: "API Keys", href: "/admin/api-keys" },
 ];
 
 const AdminLayout = () => {

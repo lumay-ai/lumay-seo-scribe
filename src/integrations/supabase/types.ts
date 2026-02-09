@@ -384,6 +384,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_api_keys: {
+        Row: {
+          api_key: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          label: string | null
+          provider: Database["public"]["Enums"]["ai_provider"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          provider: Database["public"]["Enums"]["ai_provider"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          provider?: Database["public"]["Enums"]["ai_provider"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -426,6 +459,7 @@ export type Database = {
       is_editor_or_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
+      ai_provider: "gemini" | "openai" | "openrouter" | "anthropic" | "lovable"
       app_role: "admin" | "editor" | "author"
       post_status: "draft" | "published" | "archived"
     }
@@ -555,6 +589,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      ai_provider: ["gemini", "openai", "openrouter", "anthropic", "lovable"],
       app_role: ["admin", "editor", "author"],
       post_status: ["draft", "published", "archived"],
     },
