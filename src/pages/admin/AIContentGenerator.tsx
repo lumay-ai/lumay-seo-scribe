@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAIContentGenerator, GenerateParams } from "@/hooks/useAIContentGenerator";
+import { useApiKeys, AIProvider, PROVIDER_INFO } from "@/hooks/useApiKeys";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,17 +14,18 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Loader2, Sparkles, Copy, FileText, Tags, HelpCircle, Send, 
   MapPin, Zap, Target, Layers, BookOpen, CheckCircle2, MessageCircleQuestion,
-  TrendingUp, Users, ShoppingCart
+  TrendingUp, Users, ShoppingCart, Key, Settings
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCreatePost } from "@/hooks/usePosts";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 const AIContentGenerator = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { generateContent, isGenerating, generatedContent, clearContent } = useAIContentGenerator();
+  const { apiKeys, getActiveKeyForProvider, getAvailableProviders } = useApiKeys();
   const createPost = useCreatePost();
 
   // Basic fields
@@ -39,11 +41,26 @@ const AIContentGenerator = () => {
   const [powerWords, setPowerWords] = useState("Ultimate, Essential, Proven, Expert, Revolutionary");
   const [keywordPrefix, setKeywordPrefix] = useState("");
   const [keywordSuffix, setKeywordSuffix] = useState("");
+  
+  // Provider & Model selection
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider>("lovable");
+  const [selectedModel, setSelectedModel] = useState("");
 
   const handleGenerate = async () => {
     if (!topic.trim() || !keywords.trim()) {
       toast.error("Please enter a topic and keywords");
       return;
+    }
+
+    // Get API key for selected provider
+    let customApiKey: string | undefined;
+    if (selectedProvider !== 'lovable') {
+      const keyConfig = getActiveKeyForProvider(selectedProvider);
+      if (!keyConfig) {
+        toast.error(`No active API key found for ${PROVIDER_INFO[selectedProvider].name}. Please add one in API Keys settings.`);
+        return;
+      }
+      customApiKey = keyConfig.api_key;
     }
 
     const params: GenerateParams = {
@@ -57,6 +74,9 @@ const AIContentGenerator = () => {
       powerWords: powerWords || undefined,
       keywordPrefix: keywordPrefix || undefined,
       keywordSuffix: keywordSuffix || undefined,
+      provider: selectedProvider,
+      customApiKey,
+      model: selectedModel || undefined,
     };
 
     await generateContent(params);
@@ -215,6 +235,77 @@ const AIContentGenerator = () => {
                   <SelectItem value="4000">4000+ words</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* AI Provider Selection */}
+            <div className="p-4 rounded-lg border bg-muted/30 space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  AI Provider
+                </Label>
+                <Link to="/admin/api-keys" className="text-xs text-primary hover:underline flex items-center gap-1">
+                  <Key className="h-3 w-3" />
+                  Manage API Keys
+                </Link>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Select value={selectedProvider} onValueChange={(v: AIProvider) => {
+                    setSelectedProvider(v);
+                    setSelectedModel('');
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select provider" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="lovable">
+                        <span className="flex items-center gap-2">
+                          <Sparkles className="h-3 w-3" />
+                          Lovable AI (Built-in)
+                        </span>
+                      </SelectItem>
+                      {Object.entries(PROVIDER_INFO)
+                        .filter(([key]) => key !== 'lovable')
+                        .map(([key, info]) => {
+                          const hasKey = getActiveKeyForProvider(key as AIProvider);
+                          return (
+                            <SelectItem key={key} value={key} disabled={!hasKey}>
+                              <span className="flex items-center gap-2">
+                                {info.name}
+                                {!hasKey && <span className="text-xs text-muted-foreground">(No key)</span>}
+                              </span>
+                            </SelectItem>
+                          );
+                        })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Select value={selectedModel} onValueChange={setSelectedModel}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Default model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Default</SelectItem>
+                      {PROVIDER_INFO[selectedProvider]?.models.map(model => (
+                        <SelectItem key={model} value={model}>
+                          {model}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              {selectedProvider !== 'lovable' && !getActiveKeyForProvider(selectedProvider) && (
+                <p className="text-xs text-amber-600">
+                  ⚠️ No API key configured for {PROVIDER_INFO[selectedProvider].name}. 
+                  <Link to="/admin/api-keys" className="underline ml-1">Add one here</Link>
+                </p>
+              )}
             </div>
 
             {/* Advanced Keyword Options */}

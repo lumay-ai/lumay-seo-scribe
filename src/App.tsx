@@ -19,6 +19,7 @@ import CategoriesManagement from "./pages/admin/CategoriesManagement";
 import TagsManagement from "./pages/admin/TagsManagement";
 import ProfileManagement from "./pages/admin/ProfileManagement";
 import AIContentGenerator from "./pages/admin/AIContentGenerator";
+import ApiKeyManagement from "./pages/admin/ApiKeyManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="tags" element={<TagsManagement />} />
               <Route path="team" element={<TeamManagement />} />
               <Route path="profile" element={<ProfileManagement />} />
+              <Route path="api-keys" element={<ApiKeyManagement />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

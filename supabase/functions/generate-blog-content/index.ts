@@ -2,8 +2,140 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
+
+interface ProviderConfig {
+  apiKey: string;
+  model: string;
+  baseUrl: string;
+}
+
+function getProviderConfig(provider: string, customApiKey?: string): ProviderConfig {
+  switch (provider) {
+    case 'gemini':
+      return {
+        apiKey: customApiKey || '',
+        model: 'gemini-2.5-pro',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
+      };
+    case 'openai':
+      return {
+        apiKey: customApiKey || '',
+        model: 'gpt-4o',
+        baseUrl: 'https://api.openai.com/v1/chat/completions',
+      };
+    case 'openrouter':
+      return {
+        apiKey: customApiKey || '',
+        model: 'google/gemini-2.5-pro',
+        baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
+      };
+    case 'anthropic':
+      return {
+        apiKey: customApiKey || '',
+        model: 'claude-3-5-sonnet-20241022',
+        baseUrl: 'https://api.anthropic.com/v1/messages',
+      };
+    case 'lovable':
+    default:
+      return {
+        apiKey: Deno.env.get("LOVABLE_API_KEY") || '',
+        model: 'google/gemini-2.5-pro',
+        baseUrl: 'https://ai.gateway.lovable.dev/v1/chat/completions',
+      };
+  }
+}
+
+async function callAI(
+  provider: string, 
+  config: ProviderConfig, 
+  systemPrompt: string, 
+  userPrompt: string
+): Promise<string> {
+  if (provider === 'lovable' || provider === 'openai' || provider === 'openrouter') {
+    // OpenAI-compatible API
+    const response = await fetch(config.baseUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
+        ...(provider === 'openrouter' ? { "HTTP-Referer": "https://lovable.dev" } : {}),
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 32000,
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 429) throw new Error("RATE_LIMIT");
+      if (response.status === 402) throw new Error("PAYMENT_REQUIRED");
+      const errorText = await response.text();
+      console.error(`${provider} API error:`, response.status, errorText);
+      throw new Error(`${provider} API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || '';
+  } 
+  
+  if (provider === 'anthropic') {
+    const response = await fetch(config.baseUrl, {
+      method: "POST",
+      headers: {
+        "x-api-key": config.apiKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: config.model,
+        max_tokens: 32000,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 429) throw new Error("RATE_LIMIT");
+      const errorText = await response.text();
+      console.error("Anthropic API error:", response.status, errorText);
+      throw new Error(`Anthropic API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.content?.[0]?.text || '';
+  }
+  
+  if (provider === 'gemini') {
+    const url = `${config.baseUrl}/${config.model}:generateContent?key=${config.apiKey}`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 32000 },
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 429) throw new Error("RATE_LIMIT");
+      const errorText = await response.text();
+      console.error("Gemini API error:", response.status, errorText);
+      throw new Error(`Gemini API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  }
+
+  throw new Error(`Unsupported provider: ${provider}`);
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -21,12 +153,17 @@ serve(async (req) => {
       powerWords,
       keywordPrefix,
       keywordSuffix,
-      context
+      context,
+      provider = 'lovable',
+      customApiKey,
+      model,
     } = await req.json();
     
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const config = getProviderConfig(provider, customApiKey);
+    if (model) config.model = model;
+    
+    if (!config.apiKey) {
+      throw new Error(`No API key configured for provider: ${provider}`);
     }
 
     const brand = brandName || 'Lumay AI';
@@ -245,43 +382,7 @@ ${loc ? `- Location "${loc}" mentioned throughout appropriately` : ''}
 
 Generate the complete response in the exact JSON format specified above.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 32000,
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required. Please add credits to your workspace." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error(`AI gateway error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    const content = await callAI(provider, config, systemPrompt, userPrompt);
 
     if (!content) {
       throw new Error("No content generated");
@@ -387,9 +488,23 @@ Generate the complete response in the exact JSON format specified above.`;
 
   } catch (error) {
     console.error("Error generating content:", error);
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : "Failed to generate content" 
-    }), {
+    const errorMessage = error instanceof Error ? error.message : "Failed to generate content";
+    
+    if (errorMessage === "RATE_LIMIT") {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    
+    if (errorMessage === "PAYMENT_REQUIRED") {
+      return new Response(JSON.stringify({ error: "Payment required. Please add credits to your workspace." }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

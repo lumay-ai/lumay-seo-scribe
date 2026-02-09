@@ -77,6 +77,9 @@ export interface GenerateParams {
   powerWords?: string;
   keywordPrefix?: string;
   keywordSuffix?: string;
+  provider?: string;
+  customApiKey?: string;
+  model?: string;
 }
 
 export const useAIContentGenerator = () => {
