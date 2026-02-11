@@ -32,11 +32,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Key, Plus, Pencil, Trash2, Eye, EyeOff, CheckCircle, XCircle, Sparkles } from 'lucide-react';
+import { Key, Plus, Pencil, Trash2, Eye, EyeOff, CheckCircle, XCircle, Sparkles, ShieldCheck, Loader2 } from 'lucide-react';
 import { useApiKeys, AIProvider, PROVIDER_INFO, CreateApiKeyData } from '@/hooks/useApiKeys';
 
 export default function ApiKeyManagement() {
-  const { apiKeys, isLoading, createApiKey, updateApiKey, deleteApiKey } = useApiKeys();
+  const { apiKeys, isLoading, createApiKey, updateApiKey, deleteApiKey, validateApiKey, isValidating, validationResult, resetValidation } = useApiKeys();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
@@ -70,7 +70,13 @@ export default function ApiKeyManagement() {
     
     await createApiKey.mutateAsync(newKeyData);
     setNewKeyData({ provider: 'gemini', api_key: '', label: '' });
+    resetValidation();
     setIsAddDialogOpen(false);
+  };
+
+  const handleValidateKey = async () => {
+    if (!newKeyData.api_key.trim()) return;
+    await validateApiKey(newKeyData.provider, newKeyData.api_key);
   };
 
   const handleUpdateKey = async (id: string) => {
@@ -96,7 +102,10 @@ export default function ApiKeyManagement() {
             Manage your AI provider API keys for content generation
           </p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+          setIsAddDialogOpen(open);
+          if (!open) resetValidation();
+        }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -140,8 +149,17 @@ export default function ApiKeyManagement() {
                   type="password"
                   placeholder="sk-... or AIza..."
                   value={newKeyData.api_key}
-                  onChange={(e) => setNewKeyData(prev => ({ ...prev, api_key: e.target.value }))}
+                  onChange={(e) => {
+                    setNewKeyData(prev => ({ ...prev, api_key: e.target.value }));
+                    resetValidation();
+                  }}
                 />
+                {validationResult && (
+                  <div className={`flex items-center gap-2 text-xs ${validationResult.valid ? 'text-green-600' : 'text-destructive'}`}>
+                    {validationResult.valid ? <CheckCircle className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                    {validationResult.valid ? 'API key is valid' : validationResult.error}
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Label (optional)</Label>
@@ -152,7 +170,15 @@ export default function ApiKeyManagement() {
                 />
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex gap-2 sm:gap-0">
+              <Button
+                variant="secondary"
+                onClick={handleValidateKey}
+                disabled={!newKeyData.api_key.trim() || isValidating}
+              >
+                {isValidating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
+                {isValidating ? 'Testing...' : 'Test Key'}
+              </Button>
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                 Cancel
               </Button>

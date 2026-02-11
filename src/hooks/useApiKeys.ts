@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { useState, useCallback } from 'react';
 
 export type AIProvider = 'gemini' | 'openai' | 'openrouter' | 'anthropic' | 'lovable';
 
@@ -155,9 +156,43 @@ export function useApiKeys() {
       .filter(key => key.is_active)
       .map(key => key.provider);
     
-    // Always include lovable as it's built-in
     return ['lovable', ...configuredProviders.filter(p => p !== 'lovable')];
   };
+
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationResult, setValidationResult] = useState<{ valid: boolean; error?: string } | null>(null);
+
+  const validateApiKey = useCallback(async (provider: AIProvider, api_key: string) => {
+    if (provider === 'lovable') {
+      setValidationResult({ valid: true });
+      return { valid: true };
+    }
+    setIsValidating(true);
+    setValidationResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-api-key', {
+        body: { provider, api_key },
+      });
+      if (error) throw error;
+      const result = data as { valid: boolean; error?: string };
+      setValidationResult(result);
+      if (result.valid) {
+        toast.success('API key is valid!');
+      } else {
+        toast.error(result.error || 'Invalid API key');
+      }
+      return result;
+    } catch (e: any) {
+      const result = { valid: false, error: e.message || 'Validation failed' };
+      setValidationResult(result);
+      toast.error(result.error);
+      return result;
+    } finally {
+      setIsValidating(false);
+    }
+  }, []);
+
+  const resetValidation = useCallback(() => setValidationResult(null), []);
 
   return {
     apiKeys,
@@ -168,5 +203,9 @@ export function useApiKeys() {
     deleteApiKey,
     getActiveKeyForProvider,
     getAvailableProviders,
+    validateApiKey,
+    isValidating,
+    validationResult,
+    resetValidation,
   };
 }
