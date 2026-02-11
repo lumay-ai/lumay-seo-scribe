@@ -2,3 +2,6 @@ project_id = "pkxphfqgwfiemfaufvqp"
 
 [functions.generate-blog-content]
 verify_jwt = false
+
+[functions.validate-api-key]
+verify_jwt = false
