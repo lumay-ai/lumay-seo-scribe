@@ -284,12 +284,12 @@ const AIContentGenerator = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Select value={selectedModel} onValueChange={setSelectedModel}>
+                  <Select value={selectedModel || "default"} onValueChange={(v) => setSelectedModel(v === "default" ? "" : v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Default model" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Default</SelectItem>
+                      <SelectItem value="default">Default</SelectItem>
                       {PROVIDER_INFO[selectedProvider]?.models.map(model => (
                         <SelectItem key={model} value={model}>
                           {model}
