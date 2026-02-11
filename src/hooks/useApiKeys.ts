@@ -34,7 +34,7 @@ export const PROVIDER_INFO: Record<AIProvider, { name: string; description: stri
   lovable: {
     name: 'Lovable AI (Built-in)',
     description: 'Pre-configured AI - no API key needed',
-    models: ['gemini-2.5-pro', 'gemini-2.5-flash', 'gpt-5', 'gpt-5-mini'],
+    models: ['gemini-3-flash-preview', 'gemini-3-pro-preview', 'gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.2'],
   },
   gemini: {
     name: 'Google Gemini',
