@@ -23,6 +23,7 @@ import ImageUpload from "@/components/admin/ImageUpload";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Save, Eye, ArrowLeft, X, Link2, FileText, Code, Upload, RefreshCw } from "lucide-react";
+import InternalLinking from "@/components/admin/InternalLinking";
 import { Link } from "react-router-dom";
 
 const PostEditor = () => {
