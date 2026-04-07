@@ -11,6 +11,7 @@ import SEOHead from "@/components/SEOHead";
 import TableOfContents from "@/components/TableOfContents";
 import SocialShare from "@/components/SocialShare";
 import RelatedPosts from "@/components/RelatedPosts";
+import SummarizeWith from "@/components/SummarizeWith";
 import { usePost, useRelatedPosts } from "@/hooks/usePosts";
 import { useTrackPageView } from "@/hooks/useAnalytics";
 import { SEOMeta, TableOfContentsItem, BlogPost as BlogPostType } from "@/types/blog";
@@ -195,7 +196,12 @@ const BlogPost = () => {
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   <span>{post.reading_time || 5} min read</span>
-                </div>
+              </div>
+
+              {/* Summarize with AI */}
+              <div className="mt-6">
+                <SummarizeWith title={post.title} url={pageUrl} />
+              </div>
               </div>
 
               {/* Last Updated */}
