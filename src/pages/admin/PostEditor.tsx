@@ -711,6 +711,17 @@ const PostEditor = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <InternalLinking
+              content={content}
+              currentPostId={id}
+              onInsertLink={(html) => {
+                setContent((prev) => prev + html);
+              }}
+              onUpdateContent={(newContent) => {
+                setContent(newContent);
+              }}
+            />
           </div>
         </div>
       </div>
